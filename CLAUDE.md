@@ -244,7 +244,7 @@ node helpers/write-production-plans.js /tmp/production-plans.json
 ```
 
 `write-production-plans.js` automatically:
-- Creates the `Production Plans` tab if it does not exist
+- Creates the `Visual Plans` tab if it does not exist
 - Skips any `planId` already present in the tab (safe to re-run)
 - Updates each originating Scripts row to `scriptStatus = plan_generated`
 
@@ -252,7 +252,35 @@ Track the count of plans written as `plans_generated` for the run log.
 
 ---
 
-## STEP 9 — Write run log
+## STEP 9 — Expand Visual Plans into Asset Queue
+
+```bash
+node helpers/expand-to-asset-queue.js > /tmp/expand-summary.json 2>/tmp/expand-error.txt
+```
+
+Read `/tmp/expand-summary.json` — it is a JSON object:
+
+```json
+{ "plans_processed": 0, "scenes_created": 0, "skipped": 0, "failed": 0 }
+```
+
+Store `scenes_created` and `plans_processed` for the run log. On non-zero exit or missing file, read `/tmp/expand-error.txt`, record the error, and continue.
+
+The helper automatically:
+- Reads the `Visual Plans` tab; only processes rows where `planId`, `scenePlanMarkdown`, and `scriptId` are all non-empty, **and** `expansionStatus` is empty or `"pending"`
+- Creates the `Asset Queue` tab (24 columns, one row per scene) if it does not exist
+- Ensures `expansionStatus` and `expandedAt` columns exist in `Visual Plans` (adds them if missing)
+- Skips any `planId` already present in `Asset Queue` (deduplication) and logs `asset queue already exists`
+- Parses `scenePlanMarkdown` into individual scenes and builds a complete `imagePrompt` for each
+- Flags plans with more than 7 scenes or runtime > 60 s with an `assetNotes` recommendation
+- On success: sets `expansionStatus = expanded` and `expandedAt = <timestamp>` in `Visual Plans`
+- On failure: sets `expansionStatus = expansion_failed` and appends an ERROR entry to the `Logs` tab
+
+**No images are generated. No voiceover is generated. Nothing is published.**
+
+---
+
+## STEP 10 — Write run log
 
 Build `/tmp/run-log.json` — a JSON array of log entries. Always include the summary entry first:
 
@@ -263,7 +291,7 @@ Build `/tmp/run-log.json` — a JSON array of log entries. Always include the su
     "level":      "INFO",
     "message":    "Run complete",
     "sourceName": "",
-    "details":    "sources_checked:<N> failed:<N> new_items:<N> duplicates_skipped:<N> scripts_generated:<N> plans_generated:<N>"
+    "details":    "sources_checked:<N> failed:<N> new_items:<N> duplicates_skipped:<N> scripts_generated:<N> plans_generated:<N> scenes_created:<N>"
   }
 ]
 ```
@@ -287,11 +315,14 @@ node helpers/sheets.js log /tmp/run-log.json
 
 ---
 
-## STEP 10 — Send PushNotification
+## STEP 11 — Send PushNotification
 
 Always send a PushNotification at the end of the run (success or partial failure).
 
-**All sources succeeded, scripts and plans generated:**
+**All sources succeeded, scripts + plans + scenes queued:**
+> `daily-news-collector: ✓ <N> new items from <N> sources. <N> scripts drafted. <N> plans saved. <N> scenes queued. <N> duplicates skipped.`
+
+**All sources succeeded, scripts and plans only (no scenes queued this run):**
 > `daily-news-collector: ✓ <N> new items from <N> sources. <N> scripts drafted. <N> plans saved. <N> duplicates skipped.`
 
 **All sources succeeded, scripts only (no approved scripts for plans):**
@@ -301,7 +332,7 @@ Always send a PushNotification at the end of the run (success or partial failure
 > `daily-news-collector: ✓ <N> new items from <N> sources. <N> duplicates skipped.`
 
 **Some sources failed:**
-> `daily-news-collector: <N> new items added. <N> scripts drafted. <N> plans saved. FAILED sources (<N>): <name1>, <name2>. <N> duplicates skipped.`
+> `daily-news-collector: <N> new items added. <N> scripts drafted. <N> plans saved. <N> scenes queued. FAILED sources (<N>): <name1>, <name2>. <N> duplicates skipped.`
 
 **All sources failed:**
 > `daily-news-collector: ALL <N> SOURCES FAILED. 0 new items. Check the Logs sheet.`
