@@ -11,9 +11,13 @@
  *   log <file>               → appends log entries from JSON file to Logs sheet
  *   init                     → creates sheet tabs + headers if missing (safe to re-run)
  *
- * Required env var:
- *   GOOGLE_SERVICE_ACCOUNT_JSON — full JSON of a Google Service Account key.
- *   The service account must have Editor access to the spreadsheet.
+ * Required env var (set ONE of these):
+ *   GOOGLE_SERVICE_ACCOUNT_JSON   — full JSON string of the service account key
+ *   GOOGLE_SERVICE_ACCOUNT_BASE64 — base64-encoded version of the same JSON
+ *                                   (use this when the UI can't handle raw JSON)
+ *
+ *   To encode:  base64 -i your-key.json | tr -d '\n'        (Mac/Linux)
+ *               certutil -encode key.json tmp.txt && type tmp.txt  (Windows)
  *
  *   Optional override:
  *   SPREADSHEET_ID — defaults to the hardcoded sheet ID below.
@@ -36,15 +40,21 @@ const SHEET_HEADERS = {
   'Logs':       ['timestamp', 'level', 'message', 'sourceName', 'details'],
 };
 
-function getAuth() {
-  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!keyJson) {
+function loadCredentials() {
+  const raw    = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  const b64    = process.env.GOOGLE_SERVICE_ACCOUNT_BASE64;
+  if (!raw && !b64) {
     throw new Error(
-      'GOOGLE_SERVICE_ACCOUNT_JSON is not set.\n' +
+      'Neither GOOGLE_SERVICE_ACCOUNT_JSON nor GOOGLE_SERVICE_ACCOUNT_BASE64 is set.\n' +
       'See README.md — "Google authentication setup" section.'
     );
   }
-  return new google.auth.GoogleAuth({ credentials: JSON.parse(keyJson), scopes: SCOPES });
+  const json = raw || Buffer.from(b64, 'base64').toString('utf8');
+  return JSON.parse(json);
+}
+
+function getAuth() {
+  return new google.auth.GoogleAuth({ credentials: loadCredentials(), scopes: SCOPES });
 }
 
 async function getSheetsClient() {

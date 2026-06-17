@@ -20,10 +20,10 @@ This runs once per day in the cloud. No human is watching. Send a PushNotificati
 
 Run:
 ```bash
-node -e "if(!process.env.GOOGLE_SERVICE_ACCOUNT_JSON){console.error('ERROR: GOOGLE_SERVICE_ACCOUNT_JSON is not set. See README.md.');process.exit(1);}"
+node -e "if(!process.env.GOOGLE_SERVICE_ACCOUNT_JSON && !process.env.GOOGLE_SERVICE_ACCOUNT_BASE64){console.error('ERROR: No Google auth env var set. See README.md.');process.exit(1);}"
 ```
 
-If that exits 1, stop here and send a PushNotification: "daily-news-collector FAILED: GOOGLE_SERVICE_ACCOUNT_JSON not set — see README.md."
+If that exits 1, stop here and send a PushNotification: "daily-news-collector FAILED: GOOGLE_SERVICE_ACCOUNT_JSON (or _BASE64) not set — see README.md."
 
 Then:
 ```bash
