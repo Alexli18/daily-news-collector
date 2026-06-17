@@ -143,7 +143,63 @@ node helpers/sheets.js append-seen /tmp/new-seen.json
 
 ---
 
-## STEP 7 — Write run log
+## STEP 7 — Generate scripts for approved Story Clusters
+
+```bash
+node helpers/read-clusters.js > /tmp/story-clusters.json
+```
+
+Read `/tmp/story-clusters.json`. Filter for rows where `status` is exactly `"approved"`.
+
+If no approved clusters exist, set `scripts_generated = 0` and skip to STEP 8.
+
+For each approved cluster, draft a script following all rules in the **Script Generation Rules** section. Collect all drafts into `/tmp/scripts.json` — a JSON array, one object per cluster:
+
+```json
+[
+  {
+    "scriptId":              "SCR-YYYYMMDD-NNN",
+    "generatedAt":           "<current UTC ISO 8601>",
+    "clusterId":             "<from cluster>",
+    "clusterName":           "<from cluster>",
+    "scriptStatus":          "draft",
+    "riskLevel":             "<from cluster>",
+    "productionReadiness":   "<from cluster>",
+    "englishHook":           "<one-line thumbnail hook>",
+    "englishVoiceoverScript":"<drafted script — see Script Generation Rules>",
+    "scenePlan":             "<scene-by-scene MS Paint cat description>",
+    "onScreenText":          "<key phrases to display on screen>",
+    "russianSubtitles":      "",
+    "hebrewSubtitles":       "",
+    "youtubeTitle":          "<title for YouTube>",
+    "youtubeDescription":    "<short description citing sources>",
+    "hashtags":              "<space-separated hashtags>",
+    "sourceNotes":           "<named sources and what each confirms>",
+    "factCheckChecklist":    "<[ ] items that must be verified before production>",
+    "visualPromptIdeas":     "<MS Paint / cat visual ideas>",
+    "editorNotes":           "<guardrails, excluded facts, pacing notes>"
+  }
+]
+```
+
+**`scriptId` format:** `SCR-YYYYMMDD-NNN` where `YYYYMMDD` is today's date and `NNN` starts at `001`, incrementing for each script drafted in this run (e.g. `SCR-20260617-001`, `SCR-20260617-002`).
+
+Then write to the sheet:
+
+```bash
+node helpers/write-scripts.js /tmp/scripts.json
+```
+
+`write-scripts.js` automatically:
+- Creates the `Scripts` tab if it does not exist
+- Skips any `scriptId` already present in the tab (safe to re-run)
+- Updates each originating Story Clusters row to `status = script_generated`
+
+Track the count of scripts written as `scripts_generated` for the run log.
+
+---
+
+## STEP 8 — Write run log
 
 Build `/tmp/run-log.json` — a JSON array of log entries. Always include the summary entry first:
 
@@ -154,7 +210,7 @@ Build `/tmp/run-log.json` — a JSON array of log entries. Always include the su
     "level":      "INFO",
     "message":    "Run complete",
     "sourceName": "",
-    "details":    "sources_checked:<N> failed:<N> new_items:<N> duplicates_skipped:<N>"
+    "details":    "sources_checked:<N> failed:<N> new_items:<N> duplicates_skipped:<N> scripts_generated:<N>"
   }
 ]
 ```
@@ -178,15 +234,18 @@ node helpers/sheets.js log /tmp/run-log.json
 
 ---
 
-## STEP 8 — Send PushNotification
+## STEP 9 — Send PushNotification
 
 Always send a PushNotification at the end of the run (success or partial failure).
 
-**All sources succeeded:**
+**All sources succeeded, scripts generated:**
+> `daily-news-collector: ✓ <N> new items from <N> sources. <N> scripts drafted. <N> duplicates skipped.`
+
+**All sources succeeded, no approved clusters:**
 > `daily-news-collector: ✓ <N> new items from <N> sources. <N> duplicates skipped.`
 
 **Some sources failed:**
-> `daily-news-collector: <N> new items added. FAILED sources (<N>): <name1>, <name2>. <N> duplicates skipped.`
+> `daily-news-collector: <N> new items added. <N> scripts drafted. FAILED sources (<N>): <name1>, <name2>. <N> duplicates skipped.`
 
 **All sources failed:**
 > `daily-news-collector: ALL <N> SOURCES FAILED. 0 new items. Check the Logs sheet.`
