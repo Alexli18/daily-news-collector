@@ -1,38 +1,43 @@
 [
   {
     "name": "IDF Spokesperson",
-    "url": "https://www.idf.il/en/rss/",
+    "url": "https://news.google.com/rss/search?q=site:idf.il+when:30d&hl=en-US&gl=US&ceid=US:en",
     "language": "en",
     "sourceType": "official",
-    "enabled": true
+    "enabled": true,
+    "note": "idf.il is behind Incapsula; routed via Google News site: query"
   },
   {
     "name": "Israel Ministry of Foreign Affairs",
-    "url": "https://mfa.gov.il/mfa/pressroom/pages/rss.aspx",
+    "url": "https://news.google.com/rss/search?q=site:mfa.gov.il&hl=en-US&gl=US&ceid=US:en",
     "language": "en",
     "sourceType": "official",
-    "enabled": true
+    "enabled": true,
+    "note": "mfa.gov.il RSS returns 503; routed via Google News"
   },
   {
     "name": "Prime Minister's Office",
-    "url": "https://www.gov.il/en/api/DynamicCollector/rss?OfficeId=6344b3fe-975f-42f3-9618-24b37c3a82e8",
+    "url": "https://news.google.com/rss/search?q=%22prime+minister%22+site:gov.il&hl=en-US&gl=US&ceid=US:en",
     "language": "en",
     "sourceType": "official",
-    "enabled": true
+    "enabled": true,
+    "note": "gov.il RSS returns 403; routed via Google News site:gov.il query"
   },
   {
     "name": "Israel National News (Arutz Sheva)",
-    "url": "https://www.israelnationalnews.com/rss.xml",
+    "url": "https://news.google.com/rss/search?q=site:israelnationalnews.com&hl=en-US&gl=US&ceid=US:en",
     "language": "en",
     "sourceType": "israel_focused",
-    "enabled": true
+    "enabled": true,
+    "note": "israelnationalnews.com is a JS SPA; routed via Google News"
   },
   {
     "name": "Israel Hayom",
-    "url": "https://www.israelhayom.com/feed/",
+    "url": "https://news.google.com/rss/search?q=site:israelhayom.com&hl=en-US&gl=US&ceid=US:en",
     "language": "en",
     "sourceType": "israel_focused",
-    "enabled": true
+    "enabled": true,
+    "note": "israelhayom.com returns 403; routed via Google News"
   },
   {
     "name": "JNS",
@@ -43,10 +48,11 @@
   },
   {
     "name": "i24NEWS",
-    "url": "https://www.i24news.tv/en/rss",
+    "url": "https://news.google.com/rss/search?q=site:i24news.tv&hl=en-US&gl=US&ceid=US:en",
     "language": "en",
     "sourceType": "israel_focused",
-    "enabled": true
+    "enabled": true,
+    "note": "i24news.tv is a React SPA; routed via Google News"
   },
   {
     "name": "HonestReporting",
@@ -64,10 +70,11 @@
   },
   {
     "name": "MEMRI",
-    "url": "https://www.memri.org/rss/memrirecentitems.xml",
+    "url": "https://news.google.com/rss/search?q=site:memri.org&hl=en-US&gl=US&ceid=US:en",
     "language": "en",
     "sourceType": "security_analysis",
-    "enabled": true
+    "enabled": true,
+    "note": "memri.org RSS returns 403/404; routed via Google News"
   },
   {
     "name": "FDD",
