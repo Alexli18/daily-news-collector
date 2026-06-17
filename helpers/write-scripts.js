@@ -1,20 +1,47 @@
 'use strict';
 /**
- * Reads approved clusters from Story Clusters sheet, generates draft scripts,
- * and writes them to the "Draft Scripts" tab.
+ * Writes pre-generated script data to the "Scripts" sheet tab and updates
+ * the originating Story Clusters rows to status=script_generated.
  *
- * Usage: node helpers/write-scripts.js
+ * Usage: node helpers/write-scripts.js <path-to-scripts.json>
+ *
+ * Input JSON: array of objects whose keys match SCRIPT_COLUMNS.
+ * Required per object: scriptId, clusterId, generatedAt.
  */
 
+const fs = require('fs');
 const { google } = require('googleapis');
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1w1Z1Jy3fhdeJ-ziQuuTn3bnTJ7LeETDWyp76Cs-nSLs';
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
-const TAB = 'Draft Scripts';
-const HEADERS = [
-  'generatedAt', 'clusterId', 'clusterName', 'hook',
-  'script', 'talkingPoints', 'contentNotes', 'riskLevel', 'sourceClusterStatus',
+const SCOPES        = ['https://www.googleapis.com/auth/spreadsheets'];
+const SCRIPTS_TAB   = 'Scripts';
+const CLUSTERS_TAB  = 'Story Clusters';
+
+const SCRIPT_COLUMNS = [
+  'scriptId',
+  'generatedAt',
+  'clusterId',
+  'clusterName',
+  'scriptStatus',
+  'riskLevel',
+  'productionReadiness',
+  'englishHook',
+  'englishVoiceoverScript',
+  'scenePlan',
+  'onScreenText',
+  'russianSubtitles',
+  'hebrewSubtitles',
+  'youtubeTitle',
+  'youtubeDescription',
+  'hashtags',
+  'sourceNotes',
+  'factCheckChecklist',
+  'visualPromptIdeas',
+  'editorNotes',
 ];
+
+// Columns added to Story Clusters when missing
+const CLUSTER_BACKFILL_COLS = ['scriptId', 'scriptGeneratedAt'];
 
 function getAuth() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
@@ -23,205 +50,161 @@ function getAuth() {
   return new google.auth.GoogleAuth({ credentials: JSON.parse(json), scopes: SCOPES });
 }
 
-async function ensureTab(sheets) {
+// 0-based column index → A1 letter(s)
+function colLetter(idx) {
+  let result = '';
+  let n = idx + 1;
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    result = String.fromCharCode(65 + rem) + result;
+    n = Math.floor((n - 1) / 26);
+  }
+  return result;
+}
+
+async function ensureScriptsTab(sheets) {
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
-  const exists = meta.data.sheets.some(s => s.properties.title === TAB);
+  const exists = meta.data.sheets.some(s => s.properties.title === SCRIPTS_TAB);
   if (!exists) {
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
-      requestBody: { requests: [{ addSheet: { properties: { title: TAB } } }] },
+      requestBody: { requests: [{ addSheet: { properties: { title: SCRIPTS_TAB } } }] },
     });
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${TAB}!A1`,
+      range: `${SCRIPTS_TAB}!A1`,
       valueInputOption: 'RAW',
-      requestBody: { values: [HEADERS] },
+      requestBody: { values: [SCRIPT_COLUMNS] },
     });
-    console.error(`Created tab: ${TAB}`);
+    console.error(`Created tab: ${SCRIPTS_TAB}`);
   }
 }
 
-async function getExistingClusterIds(sheets) {
+async function getExistingScriptIds(sheets) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${TAB}!A:B`,
+    range: `${SCRIPTS_TAB}!A:A`,
   });
   const rows = res.data.values || [];
-  // Column B is clusterId; skip header row
-  return new Set(rows.slice(1).map(r => (r[1] || '').trim()).filter(Boolean));
+  return new Set(rows.slice(1).map(r => (r[0] || '').trim()).filter(Boolean));
 }
 
-async function readApprovedClusters(sheets) {
+// Returns { headers, rows } — rows are raw arrays (not objects) so indices stay stable
+async function readClustersRaw(sheets) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Story Clusters',
+    range: CLUSTERS_TAB,
   });
-  const rows = res.data.values || [];
-  if (rows.length === 0) return [];
-  const headers = rows[0].map(h => h.trim());
-  return rows.slice(1)
-    .map(row => {
-      const obj = {};
-      headers.forEach((h, i) => { obj[h] = (row[i] || '').trim(); });
-      return obj;
+  const all = res.data.values || [];
+  if (all.length === 0) return { headers: [], rows: [] };
+  return { headers: all[0].map(h => h.trim()), rows: all.slice(1) };
+}
+
+// Appends missing columns to the Story Clusters header row; returns updated headers
+async function ensureClusterCols(sheets, headers) {
+  const missing = CLUSTER_BACKFILL_COLS.filter(c => !headers.includes(c));
+  if (missing.length === 0) return headers;
+  const updated = [...headers, ...missing];
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${CLUSTERS_TAB}!1:1`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [updated] },
+  });
+  console.error(`Added columns to Story Clusters: ${missing.join(', ')}`);
+  return updated;
+}
+
+// Updates status, scriptId, and scriptGeneratedAt for one cluster data row
+async function updateClusterRow(sheets, headers, dataRowIndex, scriptId, generatedAt) {
+  const sheetRow = dataRowIndex + 2; // +1 for 1-based, +1 for header row
+  const pairs = [
+    ['status',           'script_generated'],
+    ['scriptId',         scriptId],
+    ['scriptGeneratedAt', generatedAt],
+  ];
+  const updates = pairs
+    .map(([col, val]) => {
+      const i = headers.indexOf(col);
+      if (i < 0) return null;
+      return { range: `${CLUSTERS_TAB}!${colLetter(i)}${sheetRow}`, values: [[val]] };
     })
-    .filter(r => r.status === 'approved');
-}
+    .filter(Boolean);
 
-function generateScript(c) {
-  // Tone: playful, simple, MS Paint-style cat characters
-  const script = buildScript(c);
-  const hook = buildHook(c);
-  const talkingPoints = buildTalkingPoints(c);
-  const contentNotes = buildContentNotes(c);
-  return { script, hook, talkingPoints, contentNotes };
-}
-
-function buildHook(c) {
-  // Use the suggestedVideoAngle as the base, shorten to one punchy line
-  const angle = c.suggestedVideoAngle || c.clusterName;
-  // Take up to the first sentence
-  return angle.split(/[.!?]/)[0].trim();
-}
-
-function buildScript(c) {
-  const metaphor = c.possibleCatMetaphor || '';
-  const summary = c.eventSummary || '';
-  const angle = c.suggestedVideoAngle || '';
-  const framing = c.framingConflict || '';
-  const missing = c.missingContext || '';
-
-  // Extract the cat metaphor setup (before the dash, if present)
-  const metaphorLines = metaphor.split('.');
-  const catSetup = metaphorLines[0] ? metaphorLines[0].trim() : '';
-  const catPunch = metaphorLines.slice(1).join('.').trim();
-
-  // Build a structured 60-90 second script
-  return [
-    `Okay so — picture this.`,
-    ``,
-    `${catSetup}.`,
-    ``,
-    `${catPunch ? catPunch + '.' : ''}`.trim(),
-    ``,
-    `That's basically what happened here.`,
-    ``,
-    buildSummaryParagraph(summary),
-    ``,
-    buildFramingParagraph(framing),
-    ``,
-    buildMissingContextParagraph(missing),
-    ``,
-    `So — what's actually going on?`,
-    ``,
-    `Nobody has a clean answer yet. But the gap between what the deal says and what's happening on the ground? That part is not complicated.`,
-    ``,
-    catPunch ? `Remember: ${catPunch.toLowerCase()}.` : '',
-    `That's the story.`,
-  ].filter(line => line !== null && line !== undefined).join('\n').replace(/\n{3,}/g, '\n\n').trim();
-}
-
-function buildSummaryParagraph(summary) {
-  // Split into 1-2 short sentences for pacing
-  const sentences = summary.match(/[^.!?]+[.!?]+/g) || [summary];
-  return sentences.slice(0, 3).join(' ').trim();
-}
-
-function buildFramingParagraph(framing) {
-  if (!framing) return '';
-  const parts = framing.split('.').filter(s => s.trim());
-  if (parts.length === 0) return '';
-  // Pick the sharpest contrast pair
-  return `Here is the thing. ${parts.slice(0, 2).join('. ').trim()}.`;
-}
-
-function buildMissingContextParagraph(missing) {
-  if (!missing) return '';
-  const questions = missing.split('?').filter(s => s.trim());
-  if (questions.length === 0) return '';
-  // Surface the most important unanswered question
-  return `And the question nobody is answering: ${questions[0].trim()}?`;
-}
-
-function buildTalkingPoints(c) {
-  const points = [];
-  if (c.framingConflict) {
-    const parts = c.framingConflict.split('.').filter(s => s.trim());
-    if (parts[0]) points.push(parts[0].trim());
-  }
-  if (c.missingContext) {
-    const qs = c.missingContext.split('?').filter(s => s.trim());
-    if (qs[0]) points.push(`Open question: ${qs[0].trim()}?`);
-  }
-  if (c.suggestedVideoAngle) {
-    points.push(`Angle: ${c.suggestedVideoAngle}`);
-  }
-  return points.slice(0, 3).join(' | ');
-}
-
-function buildContentNotes(c) {
-  const notes = [];
-  if (c.riskLevel === 'high') {
-    notes.push('HIGH RISK: Verify all claims independently before production.');
-  } else if (c.riskLevel === 'medium') {
-    notes.push('MEDIUM RISK: Cross-check sourcing before publish.');
-  } else {
-    notes.push('Low risk: sources confirmed.');
-  }
-  if (c.notes) notes.push(c.notes);
-  return notes.join(' | ');
+  if (updates.length === 0) return;
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: { valueInputOption: 'RAW', data: updates },
+  });
 }
 
 async function main() {
-  const auth = getAuth();
-  const sheets = google.sheets({ version: 'v4', auth });
+  const [,, inputFile] = process.argv;
+  if (!inputFile) {
+    console.error('Usage: node helpers/write-scripts.js <path-to-scripts.json>');
+    process.exit(1);
+  }
 
-  await ensureTab(sheets);
-  const existingIds = await getExistingClusterIds(sheets);
-  const approved = await readApprovedClusters(sheets);
-
-  if (approved.length === 0) {
-    console.log('No approved clusters found. Nothing to write.');
+  const scripts = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
+  if (!Array.isArray(scripts) || scripts.length === 0) {
+    console.log('Input file contains no scripts.');
     return;
   }
 
-  const now = new Date().toISOString();
-  const newRows = [];
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
 
-  for (const c of approved) {
-    if (existingIds.has(c.clusterId)) {
-      console.error(`Skipping ${c.clusterId} — already in Draft Scripts.`);
+  await ensureScriptsTab(sheets);
+  const existingIds = await getExistingScriptIds(sheets);
+  let { headers, rows: clusterRows } = await readClustersRaw(sheets);
+  headers = await ensureClusterCols(sheets, headers);
+
+  const clusterIdCol = headers.indexOf('clusterId');
+  const newRows      = [];
+  const pendingUpdates = [];
+
+  for (const s of scripts) {
+    if (!s.scriptId || !s.clusterId) {
+      console.error(`Skipping entry — missing scriptId or clusterId.`);
       continue;
     }
-    const { script, hook, talkingPoints, contentNotes } = generateScript(c);
-    newRows.push([
-      now,
-      c.clusterId,
-      c.clusterName,
-      hook,
-      script,
-      talkingPoints,
-      contentNotes,
-      c.riskLevel,
-      c.status,
-    ]);
-    console.error(`Queued: ${c.clusterId} — ${c.clusterName}`);
+    if (existingIds.has(s.scriptId)) {
+      console.error(`Skipping ${s.scriptId} — already in ${SCRIPTS_TAB}.`);
+      continue;
+    }
+
+    newRows.push(SCRIPT_COLUMNS.map(col => s[col] ?? ''));
+    existingIds.add(s.scriptId);
+
+    const rowIdx = clusterRows.findIndex(r => (r[clusterIdCol] || '').trim() === s.clusterId);
+    if (rowIdx >= 0) {
+      pendingUpdates.push({ rowIdx, scriptId: s.scriptId, generatedAt: s.generatedAt });
+    } else {
+      console.error(`Warning: clusterId ${s.clusterId} not found in Story Clusters — status not updated.`);
+    }
+    console.error(`Queued: ${s.scriptId} (${s.clusterId}) — ${s.clusterName}`);
   }
 
   if (newRows.length === 0) {
-    console.log('All approved clusters already have draft scripts. Nothing new to write.');
+    console.log('No new scripts to write.');
     return;
   }
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${TAB}!A1`,
+    range: `${SCRIPTS_TAB}!A1`,
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: newRows },
   });
+  console.log(`Wrote ${newRows.length} script(s) to "${SCRIPTS_TAB}" tab.`);
 
-  console.log(`Wrote ${newRows.length} draft script(s) to "${TAB}" tab.`);
+  for (const u of pendingUpdates) {
+    await updateClusterRow(sheets, headers, u.rowIdx, u.scriptId, u.generatedAt);
+    console.error(`Updated Story Clusters row for ${u.scriptId} → script_generated`);
+  }
+
+  console.log('Done.');
 }
 
 main().catch(e => { console.error(e.message); process.exit(1); });
