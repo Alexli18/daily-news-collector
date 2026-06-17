@@ -268,13 +268,22 @@ Store `scenes_created` and `plans_processed` for the run log. On non-zero exit o
 
 The helper automatically:
 - Reads the `Visual Plans` tab; only processes rows where `planId`, `scenePlanMarkdown`, and `scriptId` are all non-empty, **and** `expansionStatus` is empty or `"pending"`
-- Creates the `Asset Queue` tab (24 columns, one row per scene) if it does not exist
-- Ensures `expansionStatus` and `expandedAt` columns exist in `Visual Plans` (adds them if missing)
-- Skips any `planId` already present in `Asset Queue` (deduplication) and logs `asset queue already exists`
-- Parses `scenePlanMarkdown` into individual scenes and builds a complete `imagePrompt` for each
+- Creates the `Asset Queue` tab (25 columns, one row per scene) if it does not exist
+- Ensures `expansionStatus`, `expandedAt` columns in `Visual Plans` and `promptValidationStatus` column in `Asset Queue` exist (adds them if missing)
+- Strips production instruction words (e.g. `lower-left`, `speech bubble`, `blinking`) from `onScreenText` — moves them as layout hints into `imagePrompt` instead
+- Sets `promptValidationStatus = valid` when `onScreenText` is clean; `needs_prompt_fix` when suspicious terms survive cleaning; rows with `needs_prompt_fix` also get `assetStatus = needs_prompt_fix`
+- Builds a structured `imagePrompt` with four sections: A) Style anchor (MS Paint / crayon), B) Scene description, C) Visible text + layout hints, D) Safety guardrails
+- Safety guardrails are always appended to every `imagePrompt` — no Eilat/Hezbollah attribution, no specific strike locations, no Hormuz drone event, no realistic war footage
+- Deduplication: plans already present in `Asset Queue` are updated in-place (not appended) — preserves row order and avoids duplicates
 - Flags plans with more than 7 scenes or runtime > 60 s with an `assetNotes` recommendation
 - On success: sets `expansionStatus = expanded` and `expandedAt = <timestamp>` in `Visual Plans`
 - On failure: sets `expansionStatus = expansion_failed` and appends an ERROR entry to the `Logs` tab
+
+**Repair mode** — to re-process and update existing rows for a specific plan without appending duplicates:
+```bash
+REPAIR_PLAN_ID=PLAN-YYYYMMDD-NNN node helpers/expand-to-asset-queue.js
+```
+This forces the target plan through the in-place update path regardless of its current `expansionStatus`.
 
 **No images are generated. No voiceover is generated. Nothing is published.**
 
