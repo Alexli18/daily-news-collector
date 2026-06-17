@@ -169,8 +169,8 @@ For each approved cluster, draft a script following all rules in the **Script Ge
     "englishVoiceoverScript":"<drafted script — see Script Generation Rules>",
     "scenePlan":             "<scene-by-scene MS Paint cat description>",
     "onScreenText":          "<key phrases to display on screen>",
-    "russianSubtitles":      "",
-    "hebrewSubtitles":       "",
+    "russianSubtitles":      "<Russian translation of englishVoiceoverScript — required, must not be empty>",
+    "hebrewSubtitles":       "<Hebrew translation of englishVoiceoverScript — required, must not be empty>",
     "youtubeTitle":          "<title for YouTube>",
     "youtubeDescription":    "<short description citing sources>",
     "hashtags":              "<space-separated hashtags>",
@@ -332,6 +332,15 @@ When generating `englishVoiceoverScript` for any cluster, apply these rules befo
 - The final line must loop back to the opening metaphor.
 - Do not repeat any phrase or sentence anywhere in the script.
 
+### Subtitles — required for every script
+
+Translate `englishVoiceoverScript` into both languages and write them to the corresponding fields:
+
+- `russianSubtitles` — full Russian translation, paragraph breaks preserved, idiomatic (not literal word-for-word).
+- `hebrewSubtitles` — full Hebrew translation, paragraph breaks preserved, idiomatic. Write right-to-left text as normal UTF-8 — the sheet handles direction.
+
+**Do not leave either field empty.** A script with blank subtitles is incomplete and must not be written to the sheet.
+
 ### Quality gate — check before saving
 
 Answer each before writing the script to the sheet:
@@ -341,8 +350,9 @@ Answer each before writing the script to the sheet:
 3. Does every factual detail in the voiceover appear in `sourceNotes`?
 4. Does it end with a memorable line that loops back to the opening?
 5. Is it better than a generic news summary?
+6. Are both `russianSubtitles` and `hebrewSubtitles` filled in?
 
-If any answer is no, rewrite once before saving.
+If any answer is no, fix before saving.
 
 ---
 
