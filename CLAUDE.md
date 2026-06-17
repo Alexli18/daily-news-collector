@@ -193,6 +193,44 @@ Always send a PushNotification at the end of the run (success or partial failure
 
 ---
 
+## Script Generation Rules
+
+When generating `englishVoiceoverScript` for any cluster, apply these rules before writing the field.
+
+### Content rules
+
+- **One core claim only.** The voiceover must communicate a single main idea. Everything else goes to `sourceNotes` or `factCheckChecklist`.
+- **Max 3 factual details in the voiceover.** Any additional facts belong in `sourceNotes`.
+- **Only include claims directly supported by `sourceNotes`.** If a claim is suspected but not verified by a named source in `sourceNotes`, move it to `factCheckChecklist` with a note, and do not include it in the voiceover.
+- **Do not include a location** (city, street, base) unless a source in `sourceNotes` explicitly names it in this exact story. Geographic specifics that look plausible but aren't confirmed are a common error.
+- **Do not make broad media-framing claims** ("Western media covered it as X") without naming specific outlets and headlines. Prefer: *"Some headlines focused on the ceasefire language."*
+- No "Today, according to reports…" — no news-anchor voice.
+- No corporate language. No passive constructions that soften facts.
+- Do not include claims about casualties, hostages, children, hospitals, or mass harm unless confirmed and sourced.
+
+### Length and structure
+
+- **110–130 words.** 45–60 seconds read aloud.
+- Structure: viral hook → cat metaphor → news reveal (max 3 facts) → the framing gap → one open question → closing punchline that loops back to the hook.
+- Short sentences. One idea per sentence.
+- The hook must be a pattern interrupt, contradiction, or vivid cat image — not a factual statement.
+- The final line must loop back to the opening metaphor.
+- Do not repeat any phrase or sentence anywhere in the script.
+
+### Quality gate — check before saving
+
+Answer each before writing the script to the sheet:
+
+1. Is the first line actually interesting? Would someone stop scrolling?
+2. Does the script stay on one core claim from start to finish?
+3. Does every factual detail in the voiceover appear in `sourceNotes`?
+4. Does it end with a memorable line that loops back to the opening?
+5. Is it better than a generic news summary?
+
+If any answer is no, rewrite once before saving.
+
+---
+
 ## Rules — do not violate
 
 - Do NOT delete rows from any sheet.
