@@ -201,3 +201,94 @@ Always send a PushNotification at the end of the run (success or partial failure
 - Do NOT call ElevenLabs, generate images, or publish anything.
 - Never crash silently — always log errors to the `Logs` sheet and send a PushNotification.
 - If `GOOGLE_SERVICE_ACCOUNT_JSON` is missing, send a PushNotification and stop immediately.
+
+---
+
+# STORY CLUSTERER ROUTINE
+
+Run on demand (not on the daily schedule) to group raw news items into tight,
+video-sized story candidates for human review.
+
+```bash
+node helpers/story-clusterer.js [--days N] [--dry-run] [--no-clear]
+```
+
+| Flag | Default | Meaning |
+|------|---------|---------|
+| `--days N` | 7 | Look back N days in Raw News |
+| `--dry-run` | off | Print clusters without writing to sheets |
+| `--no-clear` | off | Append to existing Story Clusters instead of replacing |
+
+Writes results to the **`Story Clusters`** tab and marks matched Raw News rows
+with `status: "clustered"`.
+
+---
+
+## Story Clusters tab schema
+
+| Column | Description |
+|--------|-------------|
+| `clusterId` | Stable ID (SC-001 … SC-NNN) |
+| `createdAt` | ISO 8601 timestamp of the clustering run |
+| `clusterName` | Specific story title — one event, one angle |
+| `clusterType` | `single_event` · `media_framing_conflict` · `policy_debate` · `security_context` · `domestic_politics` · `diplomacy` · `too_broad_needs_split` |
+| `eventSummary` | 2–4 sentence factual description of exactly what happened |
+| `framingConflict` | How different sources/audiences frame this differently |
+| `missingContext` | What context is absent from most coverage |
+| `suggestedVideoAngle` | Specific hook for a 45–60 second explainer |
+| `possibleCatMetaphor` | Cat-based analogy for the explainer format |
+| `mainSources` | Comma-separated source names that contributed items |
+| `sourceCount` | Number of distinct sources |
+| `relatedRawNewsKeys` | Comma-separated `dedupeKey` values of matched Raw News rows |
+| `videoPotential` | 1–5 (5 = ready to script; 1–2 = too broad or no clear angle) |
+| `riskLevel` | `low` · `medium` · `high` |
+| `productionReadiness` | `ready_for_review` · `needs_more_sources` · `needs_fact_check` · `too_broad` · `reject` |
+| `status` | Always `pending_review` on creation |
+| `notes` | Verification reminders, sourcing notes, companion cluster links |
+
+---
+
+## Cluster quality rules
+
+1. **One cluster = one video.** A cluster must represent a single event,
+   dispute, or framing conflict — not a general topic.
+
+2. **Size:** target 2–12 items. Warn if > 15. Skip single-item clusters
+   unless `videoPotential ≥ 4`.
+
+3. **Tight matching.** An item belongs only if it covers *the same specific
+   event or angle* as the other items. Shared keywords (Iran, Israel, Hamas)
+   are not sufficient.
+
+4. **Split broad themes.** "Iran deal" → subclusters by angle:
+   nuclear terms · oil sanctions · Lebanon · Trump/G7 · media framing ·
+   Israeli reaction · ceasefire violations.
+
+5. **videoPotential = 5** requires: clear hook, 45–60 sec explainable,
+   media-framing conflict or missing-context angle, visualizable.
+
+6. **riskLevel = high** if: extraordinary claim, single source,
+   breaking story, casualty numbers, or possible misattribution.
+
+7. **Do not generate scripts.** Output is candidates for human review only.
+
+---
+
+## Updating story frames
+
+Story frames live in `helpers/story-clusterer.js` in the `STORY_FRAMES` array.
+Each frame is a JavaScript object with `id`, `clusterName`, `clusterType`,
+narrative fields, `videoPotential`, `riskLevel`, `productionReadiness`,
+`notes`, and a `matchFn(item)` predicate.
+
+Update the frames when the news cycle shifts. Frames from a previous cycle
+that no longer match any items are silently skipped.
+
+Example of a good frame definition:
+- `clusterName`: `"IAF Iran strike halted one hour before takeoff"`
+- `matchFn`: tight multi-word regex — not just `/iran/i`
+- `eventSummary`: factual, sourced, 2–4 sentences
+- `framingConflict`: how Israeli / US / Iranian press each framed it
+- `missingContext`: what questions remain unanswered
+- `suggestedVideoAngle`: one specific hook sentence
+- `possibleCatMetaphor`: one sentence cat analogy
