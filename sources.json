@@ -1,0 +1,79 @@
+[
+  {
+    "name": "IDF Spokesperson",
+    "url": "https://www.idf.il/en/rss/",
+    "language": "en",
+    "sourceType": "official",
+    "enabled": true
+  },
+  {
+    "name": "Israel Ministry of Foreign Affairs",
+    "url": "https://mfa.gov.il/mfa/pressroom/pages/rss.aspx",
+    "language": "en",
+    "sourceType": "official",
+    "enabled": true
+  },
+  {
+    "name": "Prime Minister's Office",
+    "url": "https://www.gov.il/en/api/DynamicCollector/rss?OfficeId=6344b3fe-975f-42f3-9618-24b37c3a82e8",
+    "language": "en",
+    "sourceType": "official",
+    "enabled": true
+  },
+  {
+    "name": "Israel National News (Arutz Sheva)",
+    "url": "https://www.israelnationalnews.com/rss.xml",
+    "language": "en",
+    "sourceType": "israel_focused",
+    "enabled": true
+  },
+  {
+    "name": "Israel Hayom",
+    "url": "https://www.israelhayom.com/feed/",
+    "language": "en",
+    "sourceType": "israel_focused",
+    "enabled": true
+  },
+  {
+    "name": "JNS",
+    "url": "https://www.jns.org/feed/",
+    "language": "en",
+    "sourceType": "israel_focused",
+    "enabled": true
+  },
+  {
+    "name": "i24NEWS",
+    "url": "https://www.i24news.tv/en/rss",
+    "language": "en",
+    "sourceType": "israel_focused",
+    "enabled": true
+  },
+  {
+    "name": "HonestReporting",
+    "url": "https://honestreporting.com/feed/",
+    "language": "en",
+    "sourceType": "media_bias_analysis",
+    "enabled": true
+  },
+  {
+    "name": "CAMERA",
+    "url": "https://www.camera.org/feed/",
+    "language": "en",
+    "sourceType": "media_bias_analysis",
+    "enabled": true
+  },
+  {
+    "name": "MEMRI",
+    "url": "https://www.memri.org/rss/memrirecentitems.xml",
+    "language": "en",
+    "sourceType": "security_analysis",
+    "enabled": true
+  },
+  {
+    "name": "FDD",
+    "url": "https://www.fdd.org/feed/",
+    "language": "en",
+    "sourceType": "security_analysis",
+    "enabled": true
+  }
+]

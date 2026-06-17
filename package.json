@@ -1,0 +1,13 @@
+{
+  "name": "daily-news-collector",
+  "version": "1.0.0",
+  "description": "Daily Israel-focused news collector — appends fresh RSS items to Google Sheets",
+  "private": true,
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "rss-parser": "^3.13.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
