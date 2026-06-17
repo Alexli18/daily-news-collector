@@ -199,7 +199,60 @@ Track the count of scripts written as `scripts_generated` for the run log.
 
 ---
 
-## STEP 8 — Write run log
+## STEP 8 — Generate Visual Production Plans for approved Scripts
+
+Read the `Scripts` tab and find rows where `scriptStatus` is exactly `"approved"`.
+
+If no approved scripts exist, set `plans_generated = 0` and skip to STEP 9.
+
+For each approved script, generate a visual production plan using the script's `scenePlan`, `visualPromptIdeas`, `onScreenText`, and `editorNotes` fields. Collect all plans into `/tmp/production-plans.json` — a JSON array, one object per plan:
+
+```json
+[
+  {
+    "planId":              "PLAN-YYYYMMDD-NNN",
+    "generatedAt":         "<current UTC ISO 8601>",
+    "scriptId":            "<from script>",
+    "clusterName":         "<from script>",
+    "totalRuntime":        "<estimated duration, e.g. 1:10>",
+    "sceneCount":          "<number of scenes>",
+    "globalVisualStyle":   "<art style, tone, resolution, frame rate summary>",
+    "colorPalette":        "<hex codes and their usage>",
+    "characterReference":  "<MS Paint cat character descriptions and pose range>",
+    "scenePlanMarkdown":   "<full scene-by-scene breakdown: timecode, visuals, cat poses, on-screen text, camera motion, transitions, sound cues>",
+    "onScreenTextMaster":  "<table of all on-screen text cues with timecodes, style, placement>",
+    "transitionSummary":   "<table of scene-to-scene transitions with type and duration>",
+    "editorGuardrails":    "<guardrail bullets drawn from editorNotes: what not to add, fact-check items, pacing rules>",
+    "subtitleNotes":       "<subtitle requirements per language: English burn-in, Russian, Hebrew RTL>"
+  }
+]
+```
+
+**`planId` format:** `PLAN-YYYYMMDD-NNN` where `YYYYMMDD` is today's date and `NNN` starts at `001`, incrementing for each plan drafted in this run.
+
+**Scene breakdown rules:**
+- Include one entry per scene with: timecode range, scene title, visual description, cat poses and expressions, on-screen text content and styling, camera motion, transition out, and any sound cues.
+- Use the script's `scenePlan` field as the primary source. Enrich with `visualPromptIdeas` for character detail.
+- `globalVisualStyle` must always specify: art style (MS Paint / crayon, wobbly lines), resolution (1080×1920 vertical), frame rate (24 fps), and subtitle rendering requirements.
+- `colorPalette` must always include hex codes for: background white, alert red, scroll beige, cat orange, cat grey, confetti yellow, outline black, text white.
+- `editorGuardrails` must reproduce every restriction from the script's `editorNotes` verbatim, then add fact-check checklist items from `factCheckChecklist`.
+
+Then write to the sheet:
+
+```bash
+node helpers/write-production-plans.js /tmp/production-plans.json
+```
+
+`write-production-plans.js` automatically:
+- Creates the `Production Plans` tab if it does not exist
+- Skips any `planId` already present in the tab (safe to re-run)
+- Updates each originating Scripts row to `scriptStatus = plan_generated`
+
+Track the count of plans written as `plans_generated` for the run log.
+
+---
+
+## STEP 9 — Write run log
 
 Build `/tmp/run-log.json` — a JSON array of log entries. Always include the summary entry first:
 
@@ -210,7 +263,7 @@ Build `/tmp/run-log.json` — a JSON array of log entries. Always include the su
     "level":      "INFO",
     "message":    "Run complete",
     "sourceName": "",
-    "details":    "sources_checked:<N> failed:<N> new_items:<N> duplicates_skipped:<N> scripts_generated:<N>"
+    "details":    "sources_checked:<N> failed:<N> new_items:<N> duplicates_skipped:<N> scripts_generated:<N> plans_generated:<N>"
   }
 ]
 ```
@@ -234,18 +287,21 @@ node helpers/sheets.js log /tmp/run-log.json
 
 ---
 
-## STEP 9 — Send PushNotification
+## STEP 10 — Send PushNotification
 
 Always send a PushNotification at the end of the run (success or partial failure).
 
-**All sources succeeded, scripts generated:**
+**All sources succeeded, scripts and plans generated:**
+> `daily-news-collector: ✓ <N> new items from <N> sources. <N> scripts drafted. <N> plans saved. <N> duplicates skipped.`
+
+**All sources succeeded, scripts only (no approved scripts for plans):**
 > `daily-news-collector: ✓ <N> new items from <N> sources. <N> scripts drafted. <N> duplicates skipped.`
 
-**All sources succeeded, no approved clusters:**
+**All sources succeeded, no approved clusters or scripts:**
 > `daily-news-collector: ✓ <N> new items from <N> sources. <N> duplicates skipped.`
 
 **Some sources failed:**
-> `daily-news-collector: <N> new items added. <N> scripts drafted. FAILED sources (<N>): <name1>, <name2>. <N> duplicates skipped.`
+> `daily-news-collector: <N> new items added. <N> scripts drafted. <N> plans saved. FAILED sources (<N>): <name1>, <name2>. <N> duplicates skipped.`
 
 **All sources failed:**
 > `daily-news-collector: ALL <N> SOURCES FAILED. 0 new items. Check the Logs sheet.`
