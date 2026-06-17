@@ -115,8 +115,8 @@ function inferCharacters(body) {
 }
 
 function inferBackground(body) {
-  if (/black background/i.test(body))                  return 'black';
-  if (/red background|screen.*red|bg.*red/i.test(body)) return 'red';
+  if (/black\s*bg|black\s*background/i.test(body))          return 'black';
+  if (/red\s*bg|red\s*background|screen.*red/i.test(body))  return 'alert red';
   if (/newspaper|front page/i.test(body))              return 'newspaper page';
   if (/split\s*screen/i.test(body))                    return 'split screen, white both halves';
   if (/desk/i.test(body))                              return 'white, large desk centre';
@@ -158,10 +158,14 @@ function extractOnScreenText(master, start, end) {
   const tableRe = new RegExp(`\\|\\s*${esc(start)}[–\\-—]${esc(end)}\\s*\\|([^|]+)`, 'i');
   const tm = master.match(tableRe);
   if (tm) return tm[1].trim();
-  // Plain: "0:00–0:05 They signed..."
-  const plainRe = new RegExp(`${esc(start)}[–\\-—]${esc(end)}[\\s:]*([^\\n\\[]+)`, 'i');
+  // Plain: "0:00-0:05 text. 0:05-0:12 more text"
+  // Non-greedy capture, lookahead stops at the next timecode so we don't bleed into later scenes.
+  const plainRe = new RegExp(
+    `${esc(start)}[–\\-—]${esc(end)}\\s*([\\s\\S]*?)(?=\\s+\\d{1,2}:\\d{2}[–\\-—]\\d{1,2}:\\d{2}|\\s*$)`,
+    'i'
+  );
   const pm = master.match(plainRe);
-  if (pm) return pm[1].trim();
+  if (pm) return pm[1].trim().replace(/\.\s*$/, '').trim();
   return '';
 }
 
@@ -175,32 +179,33 @@ function extractSafetyNotes(guardrails) {
     .join('; ');
 }
 
-function buildImagePrompt(scene, plan) {
+function buildImagePrompt(scene, plan, onScreenText) {
   const chars = inferCharacters(scene.body);
   const bg    = inferBackground(scene.body);
-  // First meaningful sentence of the body as the action description
   const action = scene.body
     .replace(/^[^—]*—\s*/, '')
     .split(/\.\s+|\n/)[0]
     .trim() || scene.title;
 
   let tone = 'neutral, illustrative';
-  if (/confused|what memo|\?/i.test(scene.body))           tone = 'confused, curious';
-  if (/happy|confetti|peace|smile/i.test(scene.body))      tone = 'happy, celebratory';
-  if (/red|rocket|siren|alert|danger/i.test(scene.body))   tone = 'alarming, urgent';
-  if (/shrug|no comment|deadpan/i.test(scene.body))        tone = 'deadpan, ironic';
-  if (/wink|punchline|loop back/i.test(scene.body))        tone = 'cheeky, knowing';
-  if (/crumpled|scratch|tear|shreds/i.test(scene.body))    tone = 'dramatic, impactful';
+  if (/confused|what memo|\?/i.test(scene.body))          tone = 'confused, curious';
+  if (/happy|confetti|peace|smile/i.test(scene.body))     tone = 'happy, celebratory';
+  if (/red|rocket|siren|alert|danger/i.test(scene.body))  tone = 'alarming, urgent';
+  if (/shrug|no comment|deadpan/i.test(scene.body))       tone = 'deadpan, ironic';
+  if (/wink|punchline|loop back/i.test(scene.body))       tone = 'cheeky, knowing';
+  if (/crumpled|scratch|tear|shreds/i.test(scene.body))   tone = 'dramatic, impactful';
 
-  const hasText = /text:|caption:|speech bubble|on.screen/i.test(scene.body);
+  const safetyLine = extractSafetyNotes(plan.editorGuardrails);
 
   return [
     STYLE_PREFIX,
-    action,
-    chars          ? `Characters: ${chars}.`       : '',
+    action + '.',
+    chars         ? `Characters: ${chars}.`                              : '',
     `Background: ${bg}.`,
-    `Emotional tone: ${tone}.`,
-    hasText        ? 'On-screen text visible and legible.' : '',
+    onScreenText  ? `On-screen text: "${onScreenText}".`                 : '',
+    onScreenText  ? 'Large readable text, simple lettering, high contrast.' : '',
+    `Tone: ${tone}.`,
+    safetyLine    ? `Safety: ${safetyLine}.`                             : '',
   ].filter(Boolean).join(' ');
 }
 
@@ -337,18 +342,67 @@ async function main() {
     return;
   }
 
-  // Read existing Asset Queue planIds for deduplication
-  const aqData       = await readTabAsObjects(sheets, ASSET_QUEUE_TAB);
-  const existingPlanIds = new Set(aqData.objects.map(r => r.planId).filter(Boolean));
+  // Read existing Asset Queue for deduplication and in-place updates
+  const aqData                          = await readTabAsObjects(sheets, ASSET_QUEUE_TAB);
+  const { headers: aqHeaders, objects: aqObjects } = aqData;
+  const existingPlanIds = new Set(aqObjects.map(r => r.planId).filter(Boolean));
 
   for (const plan of eligible) {
     try {
-      // Deduplication
+      // planId already in Asset Queue → update rows in-place instead of appending duplicates
       if (existingPlanIds.has(plan.planId)) {
-        console.error(`Skipping ${plan.planId} — already in Asset Queue`);
-        summary.skipped++;
-        logEntries.push({ level: 'INFO', message: 'asset queue already exists', sourceName: plan.planId, details: `planId:${plan.planId}` });
-        await updateCells(sheets, VISUAL_PLANS_TAB, vpHeaders, plan._rowIdx, { expansionStatus: 'expanded' });
+        const scenes     = parseScenes(plan.scenePlanMarkdown);
+        if (scenes.length === 0) throw new Error('No scenes parsed from scenePlanMarkdown');
+        const safetyNote = extractSafetyNotes(plan.editorGuardrails);
+        const totalSec   = timeToSeconds(scenes[scenes.length - 1].end);
+        const isLong     = scenes.length > 7 || totalSec > 60;
+
+        const existingRows = aqObjects
+          .map((r, i) => ({ ...r, _rowIdx: i }))
+          .filter(r => r.planId === plan.planId)
+          .sort((a, b) => Number(a.sceneNumber) - Number(b.sceneNumber));
+
+        // Batch all cell updates for all rows into a single API call
+        const allData = [];
+        for (const er of existingRows) {
+          const sceneIdx = Number(er.sceneNumber) - 1;
+          const scene    = scenes[sceneIdx];
+          if (!scene) continue;
+          const ost = extractOnScreenText(plan.onScreenTextMaster, scene.start, scene.end);
+          const fields = {
+            sceneType:        inferSceneType(scene.title + ' ' + scene.body),
+            voiceoverLine:    scene.title,
+            onScreenText:     ost,
+            character:        inferCharacters(scene.body),
+            background:       inferBackground(scene.body),
+            visualDescription: scene.body.split('\n')[0].replace(/^[^—]*—\s*/, '').trim() || scene.title,
+            compositionNotes: inferComposition(scene.title, scene.body),
+            transition:       inferTransition(scene.body, sceneIdx < scenes.length - 1),
+            safetyNotes:      safetyNote,
+            imagePrompt:      buildImagePrompt(scene, plan, ost),
+            assetNotes:       (isLong && sceneIdx === 0)
+              ? 'consider compressing this video to 6–7 scenes; runtime may be long for Shorts'
+              : '',
+          };
+          const sheetRow = er._rowIdx + 2;
+          for (const [col, val] of Object.entries(fields)) {
+            const ci = aqHeaders.indexOf(col);
+            if (ci < 0) continue;
+            allData.push({ range: `'${ASSET_QUEUE_TAB}'!${colLetter(ci)}${sheetRow}`, values: [[String(val ?? '')]] });
+          }
+        }
+        if (allData.length > 0) {
+          await sheets.spreadsheets.values.batchUpdate({
+            spreadsheetId: SPREADSHEET_ID,
+            requestBody: { valueInputOption: 'RAW', data: allData },
+          });
+        }
+
+        summary.plans_processed++;
+        summary.scenes_created += existingRows.length;
+        logEntries.push({ level: 'INFO', message: 'asset queue updated in-place', sourceName: plan.planId, details: `scenes_updated:${existingRows.length}` });
+        console.error(`Updated ${plan.planId} → ${existingRows.length} rows in-place`);
+        await updateCells(sheets, VISUAL_PLANS_TAB, vpHeaders, plan._rowIdx, { expansionStatus: 'expanded', expandedAt: now });
         continue;
       }
 
@@ -361,6 +415,7 @@ async function main() {
 
       const assetRows = scenes.map((scene, idx) => {
         const sceneNum = idx + 1;
+        const ost = extractOnScreenText(plan.onScreenTextMaster, scene.start, scene.end);
         const row = {
           assetPlanId:      `${plan.planId}-SCENE-${String(sceneNum).padStart(2, '0')}`,
           planId:           plan.planId,
@@ -373,14 +428,14 @@ async function main() {
           sceneDuration:    scene.duration,
           sceneType:        inferSceneType(scene.title + ' ' + scene.body),
           voiceoverLine:    scene.title,
-          onScreenText:     extractOnScreenText(plan.onScreenTextMaster, scene.start, scene.end),
+          onScreenText:     ost,
           character:        inferCharacters(scene.body),
           background:       inferBackground(scene.body),
           visualDescription: scene.body.split('\n')[0].replace(/^[^—]*—\s*/, '').trim() || scene.title,
           compositionNotes: inferComposition(scene.title, scene.body),
           transition:       inferTransition(scene.body, idx < scenes.length - 1),
           safetyNotes:      safetyNote,
-          imagePrompt:      buildImagePrompt(scene, plan),
+          imagePrompt:      buildImagePrompt(scene, plan, ost),
           assetStatus:      'pending_assets',
           assetFileName:    '',
           assetLocation:    '',
