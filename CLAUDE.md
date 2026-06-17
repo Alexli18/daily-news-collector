@@ -196,7 +196,6 @@ Always send a PushNotification at the end of the run (success or partial failure
 ## Rules — do not violate
 
 - Do NOT delete rows from any sheet.
-- Do NOT generate video scripts, summaries, or editorial judgments.
 - Do NOT score, rank, cluster, or prioritize stories.
 - Do NOT call ElevenLabs, generate images, or publish anything.
 - Never crash silently — always log errors to the `Logs` sheet and send a PushNotification.
