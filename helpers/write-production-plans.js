@@ -14,7 +14,7 @@ const { google } = require('googleapis');
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1w1Z1Jy3fhdeJ-ziQuuTn3bnTJ7LeETDWyp76Cs-nSLs';
 const SCOPES         = ['https://www.googleapis.com/auth/spreadsheets'];
-const PLANS_TAB      = 'Production Plans';
+const PLANS_TAB      = 'Visual Plans';
 const SCRIPTS_TAB    = 'Scripts';
 
 const PLAN_COLUMNS = [
