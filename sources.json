@@ -56,10 +56,11 @@
   },
   {
     "name": "HonestReporting",
-    "url": "https://honestreporting.com/feed/",
+    "url": "https://news.google.com/rss/search?q=site:honestreporting.com&hl=en-US&gl=US&ceid=US:en",
     "language": "en",
     "sourceType": "media_bias_analysis",
-    "enabled": true
+    "enabled": true,
+    "note": "honestreporting.com returns 403; routed via Google News"
   },
   {
     "name": "CAMERA",
