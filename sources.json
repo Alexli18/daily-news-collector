@@ -41,10 +41,11 @@
   },
   {
     "name": "JNS",
-    "url": "https://www.jns.org/feed/",
+    "url": "https://news.google.com/rss/search?q=site:jns.org&hl=en-US&gl=US&ceid=US:en",
     "language": "en",
     "sourceType": "israel_focused",
-    "enabled": true
+    "enabled": true,
+    "note": "jns.org/feed/ times out; routed via Google News"
   },
   {
     "name": "i24NEWS",
@@ -56,10 +57,11 @@
   },
   {
     "name": "HonestReporting",
-    "url": "https://honestreporting.com/feed/",
+    "url": "https://news.google.com/rss/search?q=site:honestreporting.com&hl=en-US&gl=US&ceid=US:en",
     "language": "en",
     "sourceType": "media_bias_analysis",
-    "enabled": true
+    "enabled": true,
+    "note": "honestreporting.com/feed/ returns 403; routed via Google News"
   },
   {
     "name": "CAMERA",
