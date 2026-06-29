@@ -388,6 +388,166 @@ const STORY_FRAMES = [
     matchFn: (item) => /eu.*mull.*israel|eu.*target.*trade.*israel|eu.*sanction.*israel|eu.*judea.*samaria|kallas.*israel|apartheid.*israel|eu.*west.*bank|czechia.*sanction|czech.*block.*sanction|eurosatory.*israel|israel.*eurosatory|ben.{0,5}gvir.*sanction.*eu/i.test(_text(item)),
   },
 
+  // ── DIASPORA SECURITY ─────────────────────────────────────────────
+
+  {
+    id: 'SC-021',
+    clusterName: 'Shooting in Montreal Jewish neighborhood kills at least two — antisemitic attack investigated',
+    clusterType: 'single_event',
+    eventSummary: 'A shooting in a Jewish neighborhood of Montreal killed at least two people, including Michael Mizrahi. Canadian authorities are investigating whether the attack was antisemitic. An active shooter situation was reported at the scene. The incident follows a pattern of rising violence against Jewish communities in North America.',
+    framingConflict: 'Israeli media frames this as antisemitic violence targeting diaspora Jews. Canadian authorities are cautious about labeling motive while the investigation is open. Pro-Palestinian social media was quick to deny any connection to antisemitism. The gap between official caution and community fear is the story.',
+    missingContext: 'Has a suspect been arrested? Is there a confirmed antisemitic motive or is the investigation still open? How does this compare to the pattern of Jewish community attacks in Montreal in recent years? What security measures, if any, were in place?',
+    suggestedVideoAngle: 'A shooting in Montreal\'s Jewish neighborhood just killed at least two people. While the investigation is open, the Jewish community is not waiting for a label to know what this feels like.',
+    possibleCatMetaphor: 'The cat is not waiting for officials to formally classify the attack before locking the cat door.',
+    videoPotential: 4,
+    riskLevel: 'high',
+    productionReadiness: 'needs_fact_check',
+    notes: 'CRITICAL: Do not state a confirmed antisemitic motive unless authorities have declared it. Source the victim\'s name (Mizrahi) carefully. High diaspora audience interest.',
+    matchFn: (item) => /montreal.*shoot|shoot.*montreal|montreal.*jewish.*neighborhood|jewish.*neighborhood.*montreal|mizrahi.*montreal|montreal.*jewish.*community.*shoot|active.*shooter.*montreal/i.test(_text(item)),
+  },
+
+  // ── ISRAEL DOMESTIC SECURITY ──────────────────────────────────────
+
+  {
+    id: 'SC-022',
+    clusterName: "Shin Bet chief warns: 'The next October 7 will be in Eilat' — IDF holds emergency naval exercise",
+    clusterType: 'security_context',
+    eventSummary: "Shin Bet chief publicly warned that Israel's next major threat scenario is an October 7-style attack in Eilat from the south, referencing Houthi and Yemeni threat networks. The IDF simultaneously held a naval exercise in Eilat. This coincides with reports that Houthi threats are increasingly focused on Israeli territory, not just shipping.",
+    framingConflict: "Israeli security establishment is publicly surfacing the Eilat threat, likely to prepare public opinion and apply pressure for a stronger US posture against Houthis. The Iran deal framework does not explicitly address Houthi threats to Israel. Media coverage of the Eilat threat is largely absent from international outlets.",
+    missingContext: "What specific attack vector is the Shin Bet warning about — maritime, land, drone? Is the October 7 comparison a realistic assessment or a public pressure campaign aimed at the deal negotiators? Is the naval exercise a direct response to the warning, or pre-scheduled?",
+    suggestedVideoAngle: "Israel's top intelligence chief just said the next October 7 will be in Eilat. The IDF is running drills. Here is what the threat actually looks like.",
+    possibleCatMetaphor: "The head cat watcher just pointed at the south window and said: that is where the next attack will come from. The cats are now watching the south window.",
+    videoPotential: 4,
+    riskLevel: 'medium',
+    productionReadiness: 'needs_fact_check',
+    notes: 'Verify exact Shin Bet quote and whether "Eilat" is specifically named or implied. Pair with SC-017 (Houthi threat). Do not overstate the threat as imminent without confirmed operational intelligence.',
+    matchFn: (item) => /shin bet.*eilat|eilat.*shin bet|next oct.*eilat|eilat.*oct.*7|eilat.*naval.*exercise|naval.*exercise.*eilat|shin bet.*oct.*7.*eilat|eilat.*attack.*warn|warn.*eilat.*attack|houthi.*eilat|eilat.*houthi/i.test(_text(item)),
+  },
+
+  // ── IRAN INTERNAL ─────────────────────────────────────────────────
+
+  {
+    id: 'SC-023',
+    clusterName: "Iran charges thousands with 'treason' over alleged Israel ties — simultaneous oil windfall funds missile rebuild",
+    clusterType: 'security_context',
+    eventSummary: "The Iranian government announced it is charging thousands of Iranian citizens with 'treason' over alleged ties to Israel — a mass prosecution that targets ordinary civilians along with any real intelligence assets. Separately, analysts warn that Iran's oil windfall from deal-related sanctions relief is being rapidly redirected to rebuild its ballistic missile array destroyed during the conflict.",
+    framingConflict: "Iranian government frames the treason prosecutions as a legitimate security crackdown. Critics: this is a post-deal domestic purge targeting anyone who had contact with Israeli entities, journalists, or dual-nationals. The missile rebuild story is absent from positive deal coverage. FDD: oil sanctions relief funds the very military capability it was meant to constrain.",
+    missingContext: "What specific 'ties to Israel' are being used to justify the charges? Is this a follow-on to the previous wave of Iran-Israel spy case prosecutions? Has the IAEA commented on whether the missile rebuild violates deal commitments? What is the timeline — how quickly can the ballistic array be rebuilt?",
+    suggestedVideoAngle: "While the Iran deal was being signed, Iran quietly announced treason charges for thousands of its own citizens over Israel ties — and is using the oil money to rebuild its missiles. What the deal did not stop.",
+    possibleCatMetaphor: "The cat agreed to stop scratching the door. It used the treaty signing photo opportunity to sharpen its claws around back.",
+    videoPotential: 4,
+    riskLevel: 'medium',
+    productionReadiness: 'needs_fact_check',
+    notes: 'Two distinct stories worth pairing: domestic purge + military rebuild. Verify "thousands" figure for treason charges — is this a formal prosecution count or an estimate? Missile rebuild story needs sourcing beyond a single outlet.',
+    matchFn: (item) => /iran.*treason.*israel|treason.*iran.*israel|iran.*charge.*thousand.*treason|iran.*thousand.*treason|iran.*oil.*windfall.*missil|oil.*windfall.*ballistic|iran.*rebuild.*missil|ballistic.*missil.*rebuild.*iran|iran.*oil.*fuel.*rebuild|iran.*missile.*array/i.test(_text(item)),
+  },
+
+  // ── UK POLITICS ───────────────────────────────────────────────────
+
+  {
+    id: 'SC-024',
+    clusterName: "UK Prime Minister Starmer resigns — what it means for Israel and British Jewish community",
+    clusterType: 'diplomacy',
+    eventSummary: "British Prime Minister Keir Starmer announced his resignation. Starmer's tenure was marked by intense controversy over UK policy on Gaza, including arms sales suspensions to Israel, recognition of Palestinian statehood, and high-profile encounters with the British Jewish community over antisemitism within Labour. His resignation opens a significant policy transition period.",
+    framingConflict: "Pro-Israel British circles: Starmer never adequately balanced pro-Palestinian Labour base with Jewish community concerns. Pro-Palestinian left: Starmer was too cautious on Palestinian rights. Conservative analysis: Starmer's Gaza stance was inconsistent and damaged UK-Israel ties. British Jewish community: uncertainty about successor's approach to antisemitism in Labour.",
+    missingContext: "Who is the likely successor and what is their position on Israel and Gaza? Does Starmer's resignation change UK's arms sale suspension to Israel? Will it affect the ICJ proceedings Britain has engaged with? What drove his resignation — polling collapse, internal party revolt, or personal decision?",
+    suggestedVideoAngle: "Britain's Prime Minister just resigned. For Israel and Britain's Jewish community, here is what his time in office meant — and what comes next.",
+    possibleCatMetaphor: "The house manager who kept arguing about whether to feed the neighbor's cat has resigned. Nobody is sure if the new manager will feed the cat or not.",
+    videoPotential: 3,
+    riskLevel: 'low',
+    productionReadiness: 'needs_more_sources',
+    notes: 'Verify resignation confirmation across multiple sources. Identify likely successor and their Israel policy positions before production. Important context story for UK-Israel audience.',
+    matchFn: (item) => /starmer.*resign|resign.*starmer|fall.*starmer|kier starmer|keir starmer|uk.*prime minister.*resign/i.test(_text(item)),
+  },
+
+  // ── ISRAEL DOMESTIC POLITICS ──────────────────────────────────────
+
+  {
+    id: 'SC-025',
+    clusterName: "Netanyahu calls Likud primaries during wartime — coalition crisis deepens",
+    clusterType: 'domestic_politics',
+    eventSummary: "Prime Minister Netanyahu announced internal primaries within Likud during an active wartime period. This is an unusual political move mid-conflict and signals coalition instability. Simultaneously, the Ben Gvir–Smotrich bloc is openly challenging Netanyahu over the Iran deal and Lebanon framework, threatening coalition collapse.",
+    framingConflict: "Netanyahu camp: primaries demonstrate democratic legitimacy and shore up his base. Opposition: calling primaries during a war is a political maneuver that distracts from security decisions. Coalition right-wing: primaries are a response to internal Likud pressure after the Iran deal perceived as capitulation.",
+    missingContext: "What triggered the timing of the primaries announcement — internal Likud challenge to Netanyahu's leadership, external political pressure, or strategic calculation ahead of elections? Is the coalition under formal threat of collapse? What is the probability of snap elections?",
+    suggestedVideoAngle: "Israel is fighting on multiple fronts. Netanyahu just called party primaries. Here is what is actually happening inside Israeli politics — and why it matters for the war.",
+    possibleCatMetaphor: "The cat is in charge of the house during a fire. It just called a meeting to decide if it is still in charge of the house.",
+    videoPotential: 3,
+    riskLevel: 'low',
+    productionReadiness: 'ready_for_review',
+    notes: 'Pair with SC-007 (Trump-Netanyahu) and SC-008 (right-wing blasts Iran deal). The primaries + coalition pressure + Trump attacks form a coherent Netanyahu political crisis story.',
+    matchFn: (item) => /netanyahu.*primar|primar.*netanyahu|primar.*likud|likud.*primar|netanyahu.*calls.*primar|coalition.*collapse.*netanyahu|netanyahu.*coalition.*threat/i.test(_text(item)),
+  },
+
+  {
+    id: 'SC-026',
+    clusterName: "Bennett shocks coalition with call to evacuate outposts and cede Areas A and B",
+    clusterType: 'domestic_politics',
+    eventSummary: "Former Prime Minister Naftali Bennett publicly called for evacuating unauthorized West Bank outposts and stated that Areas A and B would not be part of Israel in a future framework — a significant departure from the current coalition's settlement expansion agenda. The statement caused immediate outrage from Smotrich and right-wing coalition partners.",
+    framingConflict: "Bennett: a pragmatic security framework requires accepting painful territorial concessions. Smotrich and right-wing: Bennett's position is a betrayal that would reward terrorism and divide the land. Center-left: finally a political leader speaking frankly about what a real settlement looks like. The statement opens a visible gap within the broader Israeli right.",
+    missingContext: "In what forum did Bennett make this statement, and in what context? Is this a deliberate political positioning ahead of elections, or a genuine policy proposal? Does Bennett have a political vehicle to translate this into action, or is it commentary?",
+    suggestedVideoAngle: "A former Israeli prime minister just said outposts should be evacuated and most of the West Bank is not Israel's. The coalition right called it treason. What Bennett actually said — and what it means.",
+    possibleCatMetaphor: "The former house cat walked back in and said maybe some rooms should belong to the neighbor. The cats who currently live there are furious.",
+    videoPotential: 3,
+    riskLevel: 'low',
+    productionReadiness: 'needs_more_sources',
+    notes: 'Verify exact Bennett quote and forum. This is an important domestic politics signal about the Israeli center shifting its public language on settlements during wartime.',
+    matchFn: (item) => /bennett.*outpost|outpost.*bennett|bennett.*evacuate|bennett.*areas.*a.*and.*b|bennett.*area.*a|bennett.*area.*b|bennett.*west.*bank.*not.*israel|bennett.*cede|bennett.*sparks.*outrage/i.test(_text(item)),
+  },
+
+  // ── US-ISRAEL DIPLOMACY ───────────────────────────────────────────
+
+  {
+    id: 'SC-027',
+    clusterName: "Israel and Lebanon hold Washington talks on Hezbollah disarmament — IDF put on defensive-only orders",
+    clusterType: 'diplomacy',
+    eventSummary: "Israel and Lebanon held direct talks in Washington on Hezbollah disarmament under US mediation, with a formal US-brokered framework agreement signed. Reports emerged that Israeli troops in Lebanon were placed under new defensive-only orders by the New York Times. A bipartisan US Congressional resolution called on Lebanon to disarm Hezbollah amid ongoing ceasefire violations.",
+    framingConflict: "US State Department: a framework has been achieved, diplomatic progress is being made. Lebanon: the deal will not be implemented as written. Israel right-wing: the Washington framework is a surrender. Lebanese parliamentary speaker publicly said the deal 'will not be implemented.' The framework's enforceability is in question from day one.",
+    missingContext: "What specific disarmament timeline and verification mechanism was agreed in Washington? Do the defensive-only IDF orders mean Israel cannot respond to Hezbollah launches? Who enforces the framework if Lebanon's parliament speaker has already rejected it? Is the bipartisan Congressional resolution binding?",
+    suggestedVideoAngle: "Israel and Lebanon just signed a US-brokered disarmament framework in Washington. Lebanon's parliament speaker immediately said it will not be implemented. What happened in Washington — and what happens next?",
+    possibleCatMetaphor: "Two cats signed an agreement that the basement cat would put away its claws. The basement cat's owner said the agreement does not apply downstairs.",
+    videoPotential: 4,
+    riskLevel: 'medium',
+    productionReadiness: 'needs_fact_check',
+    notes: 'Closely related to SC-004 and SC-011 but focuses on the Washington diplomatic track specifically. Pair with the Lebanese parliamentary speaker rejection quote. The defensive-only IDF orders claim needs multi-source verification.',
+    matchFn: (item) => /washington.*talks.*hezbollah|hezbollah.*disarmament.*washington|israel.*lebanon.*washington|lebanon.*disarmament.*talk|washington.*framework.*hezbollah|idf.*defensive.{0,5}only.*orders|defensive.{0,5}only.*idf.*lebanon|bipartisan.*resolution.*hezbollah|hezbollah.*disarm.*resolution/i.test(_text(item)),
+  },
+
+  // ── US DOMESTIC — PRO-ISRAEL POLITICS ────────────────────────────
+
+  {
+    id: 'SC-028',
+    clusterName: "NY Mayor candidate Mamdani defends calling AIPAC 'monsters' — redefines NYC pro-Israel politics",
+    clusterType: 'policy_debate',
+    eventSummary: "New York City mayoral candidate Zohran Mamdani publicly defended his characterization of AIPAC as 'monsters,' generating significant controversy. Mamdani also backed the anti-Israel boycott organization while running in a city with the largest Jewish population outside Israel. The episode highlights the shift in progressive Democratic politics on Israel.",
+    framingConflict: "Mamdani and progressive supporters: AIPAC lobbying is harmful to democracy and Palestinian rights. Jewish community groups and pro-Israel Democrats: this rhetoric normalizes hostility toward the largest pro-Israel organization and toward Jewish political engagement. Republican analysis: this is evidence of mainstream Democratic embrace of anti-Israel positions.",
+    missingContext: "What is Mamdani's standing in the NYC mayoral race — could he actually win? How is this playing among NYC Jewish voters? Has any senior Democratic official endorsed or distanced themselves from Mamdani's AIPAC comments? What is AIPAC's formal response?",
+    suggestedVideoAngle: "A leading New York City mayoral candidate called the biggest pro-Israel lobby 'monsters' — and defended it. Here is what it tells us about where US politics on Israel is heading.",
+    possibleCatMetaphor: "The cat running for building manager said the other cats who bring food are monsters. A lot of the building still likes those cats. The election is next month.",
+    videoPotential: 3,
+    riskLevel: 'low',
+    productionReadiness: 'ready_for_review',
+    notes: 'High US Jewish community interest. Verify: does "monsters" appear verbatim in the Mamdani statement, or is this a paraphrase? This is a US domestic politics angle with strong Israel-diaspora relevance.',
+    matchFn: (item) => /mamdani.*aipac|aipac.*monster|mamdani.*monster|mamdani.*defend|mamdani.*boycott|mamdani.*israel/i.test(_text(item)),
+  },
+
+  // ── INDIA-ISRAEL DEFENSE ──────────────────────────────────────────
+
+  {
+    id: 'SC-029',
+    clusterName: 'India deepens defense ties with Israel and moves BrahMos supersonic missiles toward UAE',
+    clusterType: 'diplomacy',
+    eventSummary: "Israel's defense ministry chief visited India to deepen strategic and defense cooperation as the two countries expand joint military technology programs. Separately, India is in talks with the UAE for the supersonic BrahMos missile system and advanced air defense systems. The India-Gulf-Israel triangle is emerging as a significant realignment amid US-Iran deal uncertainty.",
+    framingConflict: "India frames BrahMos Gulf sales as a normal arms trade decision. Arab states see the India-UAE-Israel defense axis as a hedge against Iranian expansion. Israel frames this as normalization of defense ties deepening the Abraham Accords coalition. Iran views the India-Israel-UAE arms triangle as hostile encirclement.",
+    missingContext: "Is Israel directly supplying defense components to India for the BrahMos system or is this a separate Indian-UAE deal? What specific defense programs were agreed during the Israeli defense ministry visit to India? How does this interact with the India-Pakistan dynamic?",
+    suggestedVideoAngle: "India is selling supersonic missiles to the UAE while deepening defense ties with Israel. A new security alliance is forming in the Middle East — and it isn't the one the Iran deal assumed.",
+    possibleCatMetaphor: "While the big cats were signing peace deals, three smaller cats quietly formed a defense pact of their own.",
+    videoPotential: 3,
+    riskLevel: 'low',
+    productionReadiness: 'needs_more_sources',
+    notes: 'The BrahMos-UAE and Israel-India defense visit are two separate stories. Verify whether they have a genuine connection before linking them in a single frame. Important strategic context story for post-deal regional realignment.',
+    matchFn: (item) => /israel.*india.*defense|india.*israel.*defense|brahmos.*uae|uae.*brahmos|india.*uae.*missile|india.*uae.*air defense|india.*uae.*supersonic|israeli.*defense.*minister.*india|israel.*defense.*minister.*india/i.test(_text(item)),
+  },
+
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 
