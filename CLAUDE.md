@@ -55,7 +55,15 @@ Store this as your in-memory deduplication set for the rest of this run.
 
 ## STEP 3 — Load sources
 
-Read `sources.json`. Keep only entries where `"enabled": true`.
+```bash
+node helpers/sheets.js read-sources > /tmp/sheet-sources.json
+```
+
+Read `/tmp/sheet-sources.json`. If it is a non-empty array, use it as the source list.
+Otherwise (empty array — the `Sources` tab doesn't exist or has no data rows), read
+`sources.json` and use that instead.
+
+Keep only entries where `"enabled"` is `true`.
 
 ---
 

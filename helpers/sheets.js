@@ -6,6 +6,8 @@
  *
  * Commands:
  *   read-seen                → prints JSON array of dedupeKeys from Seen Items sheet
+ *   read-sources             → prints JSON array of source objects from the optional
+ *                              Sources sheet tab, or [] if the tab doesn't exist / is empty
  *   append-news <file>       → appends rows from JSON file to Raw News sheet
  *   append-seen <file>       → appends rows from JSON file to Seen Items sheet
  *   log <file>               → appends log entries from JSON file to Logs sheet
@@ -124,6 +126,39 @@ async function cmdReadSeen() {
   process.stdout.write(JSON.stringify(keys) + '\n');
 }
 
+// Optional 'Sources' tab: if present with a header row + at least one data
+// row, callers should use it instead of sources.json. Returns [] when the
+// tab doesn't exist or has no data rows.
+async function cmdReadSources() {
+  const sheets = await getSheetsClient();
+  const existing = await getExistingSheetTitles(sheets);
+  if (!existing.has('Sources')) {
+    process.stdout.write('[]\n');
+    return;
+  }
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: "'Sources'!A:Z",
+  });
+  const rows = res.data.values || [];
+  if (rows.length < 2) {
+    process.stdout.write('[]\n');
+    return;
+  }
+  const headers = rows[0].map(h => String(h).trim());
+  const sources = rows.slice(1)
+    .filter(r => r.some(cell => String(cell || '').trim() !== ''))
+    .map(r => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = r[i] !== undefined ? r[i] : ''; });
+      if (typeof obj.enabled === 'string') {
+        obj.enabled = obj.enabled.trim().toLowerCase() === 'true';
+      }
+      return obj;
+    });
+  process.stdout.write(JSON.stringify(sources) + '\n');
+}
+
 async function cmdAppendNews(filepath) {
   const items = JSON.parse(fs.readFileSync(filepath, 'utf8'));
   if (!items.length) { console.log('0 rows — nothing to append to Raw News.'); return; }
@@ -195,13 +230,14 @@ async function main() {
   try {
     switch (command) {
       case 'read-seen':    await cmdReadSeen();          break;
+      case 'read-sources': await cmdReadSources();       break;
       case 'append-news':  await cmdAppendNews(filepath); break;
       case 'append-seen':  await cmdAppendSeen(filepath); break;
       case 'log':          await cmdLog(filepath);        break;
       case 'init':         await cmdInit();               break;
       default:
         console.error('Unknown command:', command);
-        console.error('Usage: node helpers/sheets.js <read-seen|append-news|append-seen|log|init> [file]');
+        console.error('Usage: node helpers/sheets.js <read-seen|read-sources|append-news|append-seen|log|init> [file]');
         process.exit(1);
     }
   } catch (err) {
